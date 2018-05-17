@@ -77,11 +77,6 @@ class TestUserIsUnauthorized(RequiresTestUser):
     user_name = "TestUserIsUnauthorized User"
     token: bytes
 
-    def teardown_method(self):
-        """Delete the User we created."""
-        User.query.get(self.user.identifier).delete()
-        db.session.commit()
-
     def test_invalid_token(self):
         """Check for a True response after giving an invalid token."""
         assert user_is_unauthorized(self.user.identifier, self.invalid_token)
@@ -89,6 +84,11 @@ class TestUserIsUnauthorized(RequiresTestUser):
     def test_valid_token(self):
         """Check for a False response after giving the valid token."""
         assert not user_is_unauthorized(self.user.identifier, self.token)
+
+    def test_invalid_user_ID(self):
+        """Check that an invalid User ID is handled properly."""
+        assert user_is_unauthorized(-1, self.token)
+
 
 class TestEntry(RequiresTestEntry):
     """Tests for the "/entry" entrypoint."""
@@ -99,18 +99,83 @@ class TestEntry(RequiresTestEntry):
     entry_content = "Simulated real content!"
 
     def test_unauthorized_user(self):
-        """Test that an unauthorized user receives a 401 error."""
+        """Test that an unauthorized user receives a 401 error.
+
+        Important NOTE: this should also verify that a request submitted with
+        an invalid UID, or token is indistinguishable.
+        """
+        invalid_token_response = get(
+            build_url(self.config.PROTO, self.config.SERVER_URL, "entry"),
+            data={
+                "uid":          self.user.identifier,
+                "token":        self.invalid_token,
+                "elementid":    self.entry.identifier,
+            }
+        )
+        assert not invalid_token_response.ok
+        assert invalid_token_response.status_code = 401
+        assert invalid_token_response.text == "Unauthorized"
+        with raises(HTTPError):
+            invalid_token_response.raise_for_status()
+
+        invalid_user_response = get(
+            build_url(self.config.PROTO, self.config.SERVER_URL, "entry"),
+            data={
+                'uid':          -1,
+                'token':        b'Correct type, invalid token.',
+                'elementid':    self.entry.identifier
+            }
+        )
+        assert not invalid_user_response.ok
+        assert invalid_user_response.status_code == 401
+        assert invalid_token_response.text == "Unauthorized"
+        with raises(HTTPError):
+            invalid_user_response.raise_for_status()
+
+        for attr in invalid_token_response:
+            assert invalid_user_response.__dict__[attr]\
+                == invalid_token_response.__dict__[attr],\
+                "Attribute %s doesn't match" % attr
+
+    def test_valid_GET(self):
+        """Test for a valid GET request for a valid DB row."""
         response = get(
             build_url(self.config.PROTO, self.config.SERVER_URL, "entry"),
             data={
-                "uid": self.user.identifier,
-                "token": self.invalid_token,
-                "elementid": self.entry.identifier,
-                "content": self.test_content
+                'uid':          self.user.identifier,
+                'token':        self.token,
+                'elementid':    self.entry.identifier,
+            }
+        )
+        assert response.ok
+        assert response.json['identifier'] = self.entry.identifier
+        assert response.json['content'] = self.entry_content
+        assert response.json['author'] = self.user.identifier
+        # TODO: test for creation time
+        response = get(
+            build_url(self.config.PROTO, self.config.SERVER_URL, "entry"),
+            data={
+                'uid':          self.user.identifier,
+                'token':        self.token,
+                'elementid':    self.entry.identifier,
+                'json':         0,
+            }
+        )
+        assert response.ok
+        assert response.text == self.test_content
+
+    def test_invalid_GET(arg):
+        """Test that an invalid GET request is handled properly."""
+        response = get(
+            build_url(self.config.PROTO, self.config.SERVER_URL, "entry"),
+            data={
+                'uid':          self.user.identifier,
+                'token':        self.token,
+                'elementid':    -1,
             }
         )
         assert not response.ok
-        assert response.status_code = 401
-        assert response.text == "Unauthorized"
+        assert response.status_code == 400
+        assert response.text == "Invalid entry ID."
         with raises(HTTPError):
-            response.raise_for_status
+            response.raise_for_status()

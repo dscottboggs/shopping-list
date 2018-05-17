@@ -9,7 +9,10 @@ from sqlalchemy.exc import SQLAlchemyError
 def user_is_unauthorized(id: int, token: bytes) -> bool:
     """Check if the given user is authorized, and return False if so."""
     from interface_api.models import User
-    user = User.query.get(id)
+    try:
+        user = User.query.get(id)
+    except SQLAlchemyError:
+        return True
     if user:
         return not user.check_token(token)
     return True
@@ -29,20 +32,36 @@ def entry():
     content:    A string of up to 256 characters long to be saved as the
                 content of the Entry. (only applies to POST requests)
     """
+    try:
+        assert isinstance(uid, int), uid
+        assert isinstance(token, bytes), token
+        assert isinstance(elementid, int), elementid
+        assert isinstance(json, int), json
+        assert isinstance(content, str), content
+    except AssertionError as e:
+        return (f"{e.args[0]} is an invalid type.", 400)
+    if len(content) > 256:
+        return (
+            f"Content is too long! Received {len(content)} chars, max 256.",
+            400
+        )
     if user_is_unauthorized(
-                incoming_request.values.get("uid"),
+                int(incoming_request.values.get("uid")),
                 incoming_request.values.get('token')
             ):
         return ("Unauthorized", 401)
     from interface_api import db
     from interface_api.models import ListEntry
     if incoming_request.method == "GET":
-        return str(
-            ListEntry.query.get(incoming_request.values.get("elementid"))
-        ) if incoming_request.values.get("json") == "0"\
-            else ListEntry.query.get(
-                incoming_request.values.get("elementid")
-            ).json
+        try:
+            return str(
+                ListEntry.query.get(incoming_request.values.get("elementid"))
+            ) if incoming_request.values.get("json") == "0"\
+                else ListEntry.query.get(
+                    incoming_request.values.get("elementid")
+                ).json
+        except SQLAlchemyError:
+            return ("Invalid entry ID.", 400)
     if incoming_request.method == "POST":
         the_entry = ListEntry(
             content=incoming_request.values.get("content"),

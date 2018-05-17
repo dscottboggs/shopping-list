@@ -11,3 +11,5 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     ENTROPY_BITS = 500
     PUBLISH_PORT = 5000
+    PROTO = "http"
+    SERVER_URL = f"localhost:{PUBLISH_PORT}"

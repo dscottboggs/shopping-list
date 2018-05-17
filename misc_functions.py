@@ -188,3 +188,14 @@ def num_to_alpha(number: int, random_value: bool=False) -> str:
     If 'random_value' is True, num isn't the literal number to be converted, it's how
     many bits of entropy to gather for a random value."""
     return baseN(num, 36)
+
+
+@strict
+def build_url(proto: str, fqdn: str, *endpoint: str) -> str:
+    """Build a URL from a domain name followed by its enpoint values.
+
+    the resulting string will look like:
+        proto://fqdn/end/point/address
+    """
+    assert proto in ('http', 'https', 'unix')
+    return f"{proto}://{fqdn}/" + '/'.join(endpoint)

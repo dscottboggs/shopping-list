@@ -20,7 +20,7 @@ def user_is_unauthorized(id: int, token: bytes) -> bool:
 
 @app.route("/entry", methods=["GET", "POST", "DELETE"])
 def entry():
-    """Retrieve, create, or delete a list entry.
+    """Retrieve, create, or delete a list entry for an authenticated user.
 
     Accepted arguments for this endpoint:
     uid:        The user's ID number (their primary key)
@@ -31,15 +31,41 @@ def entry():
                 is returned. (only applies to GET requests)
     content:    A string of up to 256 characters long to be saved as the
                 content of the Entry. (only applies to POST requests)
+
+    Actions taken per method:
+    Method  Code    Explanation             Body
+    GET:    200  -  Valid request           Either the content of the entry as
+                                            a string (if the 'json' request
+                                            value is '0') or its JSON-encoded
+                                            attributes.
+            400  -  Malformed request       Descriptive error.
+            401  -  User authentication     Lit. "Unauthorized."
+                    failed.
+    POST:   Creates a new entry with the provided content, authored by the
+            authenticated user.
+        Responses:
+            Same as for get requests, including returning the JSON-encoded (or
+            plain-text) content of the submitted entry.
+    DELETE: Deletes the specified row in the database
+        Responses:
+            200  -  Valid request           Lit. "success"
+            400  -  Same as for GET/POST requests.
+            401  -  Same as for GET/POST requests.
     """
+    def check_type(val, type):
+        assert isinstance(val, type),\
+            f"{val} should be {type} but it's {type(val)}"
     try:
-        assert isinstance(uid, int), uid
-        assert isinstance(token, bytes), token
-        assert isinstance(elementid, int), elementid
-        assert isinstance(json, int), json
-        assert isinstance(content, str), content
+        for val, t in {
+                    incoming_request.values.get('uid'): int
+                    incoming_request.values.get('token'): bytes
+                    incoming_request.values.get('elementid'): int
+                    incoming_request.values.get('json'): int
+                    incoming_request.values.get('content'): str
+                }:
+            check_type(val, t)
     except AssertionError as e:
-        return (f"{e.args[0]} is an invalid type.", 400)
+        return (e.args[0], 400)
     if len(content) > 256:
         return (
             f"Content is too long! Received {len(content)} chars, max 256.",
@@ -78,7 +104,7 @@ def entry():
             return ("success", 200)
         except SQLAlchemyError:
             return (
-                "Couldn't delete row %s"
+                "Couldn't delete row %s."
                     % incoming_request.values.get('elementid'),
                 400
             )

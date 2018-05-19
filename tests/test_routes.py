@@ -46,6 +46,34 @@ class RequiresTestUser:
         User.query.get(self.user.identifier).delete()
         db.session.commit()
 
+    def test_unauthorized_user(self):
+        """Test that an unauthorized user receives a 401 error.
+
+        Important NOTE: this should also verify that a request submitted with
+        an invalid UID, or token is indistinguishable.
+        """
+        def check_method(method: str):
+            """Check an unauthorized user for a particular method."""
+            invalid_token_response = request(
+                method=method
+                url=self.api_endpoint,
+                headers={
+                    "uid":          self.user.identifier,
+                    "token":        self.invalid_token,
+                    "elementid":    self.entry.identifier,
+                }
+            )
+            assert not invalid_token_response.ok
+            assert invalid_token_response.status_code = 401
+            assert invalid_token_response.text == "Unauthorized"
+            with raises(HTTPError):
+                invalid_token_response.raise_for_status()
+
+        for meth in self.valid_methods:
+            check_method(meth)
+
+
+
 class RequiresTestEntry(RequiresTestUser):
     """A superclass for tests that require a ListEntry object to work with.
 
@@ -97,56 +125,13 @@ class TestEntry(RequiresTestEntry):
     token: bytes
     api_endpoint = build_url(
         self.config.PROTO, self.config.SERVER_URL, "entry")
-    entry_content = "Simulated real content!"
-
-    def test_unauthorized_user(self):
-        """Test that an unauthorized user receives a 401 error.
-
-        Important NOTE: this should also verify that a request submitted with
-        an invalid UID, or token is indistinguishable.
-        """
-        def check_method(method: str):
-            """Check an unauthorized user for a particular method."""
-            invalid_token_response = request(
-                method=method
-                url=self.api_endpoint,
-                data={
-                    "uid":          self.user.identifier,
-                    "token":        self.invalid_token,
-                    "elementid":    self.entry.identifier,
-                }
-            )
-            assert not invalid_token_response.ok
-            assert invalid_token_response.status_code = 401
-            assert invalid_token_response.text == "Unauthorized"
-            with raises(HTTPError):
-                invalid_token_response.raise_for_status()
-
-        # invalid UID.
-        invalid_user_response = get(
-            self.api_endpoint
-            data={
-                'uid':          -1,
-                'token':        self.invalid_token,
-                'elementid':    self.entry.identifier
-            }
-        )
-        assert not invalid_user_response.ok
-        assert invalid_user_response.status_code == 401
-        assert invalid_token_response.text == "Unauthorized"
-        with raises(HTTPError):
-            invalid_user_response.raise_for_status()
-
-        for attr in invalid_token_response:
-            assert invalid_user_response.__dict__[attr]\
-                == invalid_token_response.__dict__[attr],\
-                "Attribute %s doesn't match" % attr
+    entry_content = b"Simulated real content!"
 
     def test_valid_GET(self):
         """Test for a valid GET request for a valid DB row."""
         response = get(
             self.api_endpoint,
-            data={
+            headers={
                 'uid':          self.user.identifier,
                 'token':        self.token,
                 'elementid':    self.entry.identifier,
@@ -160,7 +145,7 @@ class TestEntry(RequiresTestEntry):
         # TODO: test for creation time to be actually near "now"
         response = get(
             self.api_endpoint,
-            data={
+            headers={
                 'uid':          self.user.identifier,
                 'token':        self.token,
                 'elementid':    self.entry.identifier,
@@ -174,7 +159,7 @@ class TestEntry(RequiresTestEntry):
         """Test that an invalid GET request is handled properly."""
         response = get(
             self.api_endpoint,
-            data={
+            headers={
                 'uid':          self.user.identifier,
                 'token':        self.token,
                 'elementid':    -1,
@@ -190,11 +175,11 @@ class TestEntry(RequiresTestEntry):
         """Test POSTing an entry works."""
         response = post(
             self.api_endpoint,
-            data={
+            headers={
                 'uid': self.user.identifier,
-                'token': self.token,
-                'content': self.entry_content
-            }
+                'token': self.token
+            },
+            data=self.entry_content
         )
         assert response.ok
         assert response.status_code == 200
@@ -203,12 +188,12 @@ class TestEntry(RequiresTestEntry):
         # TODO: test for creation time
         response = post(
             self.api_endpoint,
-            data={
+            headers={
                 'uid': self.user.identifier,
                 'token': self.token,
-                'content': self.entry_content,
                 'json': 0
             }
+            data=self.entry_content
         )
         assert response.ok
         assert response.status_code == 200
@@ -230,11 +215,13 @@ class TestEntry(RequiresTestEntry):
             """Test for the response with json enabled or not."""
             response = post(
                 self.api_endpoint,
-                data={
+                headers={
                     'uid': self.user.identifier,
                     'token': self.token,
-                    'content': too_long_content,
                     'json': '1' if json else '0'
+                }
+                data={
+                    self.entry_content
                 }
             )
             assert not response.ok
@@ -260,7 +247,7 @@ class TestEntry(RequiresTestEntry):
         # A-Okay, let's delete it.
         response = delete(
             self.api_endpoint,
-            data={
+            headers={
                 'uid': self.user.identifier,
                 'token': self.token,
                 'elementid': self.entry.identifier
@@ -274,7 +261,7 @@ class TestEntry(RequiresTestEntry):
             ListEntry.query.get(self.entry.identifier)
         response = get(
             self.api_endpoint,
-            data={
+            headers={
                 'uid': self.user.identifier,
                 'token': self.token,
                 'elementid': self.entry.identifier
@@ -288,7 +275,7 @@ class TestEntry(RequiresTestEntry):
         """Test for the proper results from an invalid DELETE request."""
         response = delete(
             self.api_endpoint,
-            data={
+            headers={
                 'uid': self.user.identifier,
                 'token': self.token,
                 'elementid': -1
@@ -297,3 +284,43 @@ class TestEntry(RequiresTestEntry):
         assert not response.ok
         assert response.status_code == 400
         assert response.text == f"Couldn't delete row -1."
+
+
+class TestListEntries(RequiresTestUser):
+    """Tests for the list_entries endpoint."""
+
+    api_endpoint = build_url(self.config.PROTO, self.config.SERVER_URL, "list")
+
+    @property
+    @strict
+    def entries(self) -> List[Dict[str, Union[int, str]]]:
+        """A list of the attributes of each entry in the database."""
+        try:
+            return self._entries
+        except AttributeError:
+            self._entries = [
+                loads(entry.json) for entry in ListEntry.query.all()
+            ]
+            return self._entries
+
+    def test_valid_query(self):
+        """Check that an authorized query returns the correct values."""
+        response = get(
+            self.api_endpoint,
+            headers={
+                'uid': self.user.identifier,
+                'token': self.token
+            }
+        )
+        assert response.ok
+        assert response.status_code == 200
+        assert response.json == self.entries
+
+    def test_invalid_query(self):
+        """Test for a malformed request.
+
+        TODO as there really isn't a way to make an authenticated, malformed
+        request, and authentication is already being tested by the
+        RequiresTestUser superclass.
+        """
+        pass

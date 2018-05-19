@@ -1,11 +1,16 @@
 """Tests for the routes.py file in the interface_api module."""
 from interface_api.routes import user_is_unauthorized
-from interface_api.models import User
+from interface_api.models import User, ListEntry
 from config import Config
 from misc_functions import build_url
 from interface_api import db
 from requests import get, post, delete, request, HTTPError
 from strict_hint import strict
+from pytest import raises
+from json import loads
+from textwrap import dedent
+from typing import Dict, List, Union
+from SQLAlchemy import SQLAlchemyError
 
 
 class RequiresTestUser:
@@ -29,6 +34,7 @@ class RequiresTestUser:
 
     def setup_method(self):
         """Create a User to check for, commit it, and store its token."""
+        self.config = Config()
         self.user = User(str(self.user_name))
 
         @strict
@@ -125,10 +131,15 @@ class TestEntry(RequiresTestEntry):
 
     user_name = "TestEntry User"
     token: bytes
-    api_endpoint = build_url(
-        self.config.PROTO, self.config.SERVER_URL, "entry")
+
     entry_content = b"Simulated real content!"
-    valid_methods: Tuple[str...] = ("GET", "POST", "DELETE")
+    valid_methods = ("GET", "POST", "DELETE")
+
+    @property
+    @strict
+    def api_endpoint(self) -> str:
+        return build_url(
+            self.config.PROTO, self.config.SERVER_URL, "entry")
 
     def test_valid_GET(self):
         """Test for a valid GET request for a valid DB row."""
@@ -158,7 +169,7 @@ class TestEntry(RequiresTestEntry):
         assert response.ok
         assert response.text == self.test_content
 
-    def test_invalid_GET(arg):
+    def test_invalid_GET(self):
         """Test that an invalid GET request is handled properly."""
         response = get(
             self.api_endpoint,
@@ -195,7 +206,7 @@ class TestEntry(RequiresTestEntry):
                 'uid': self.user.identifier,
                 'token': self.token,
                 'json': 0
-            }
+            },
             data=self.entry_content
         )
         assert response.ok
@@ -222,7 +233,7 @@ class TestEntry(RequiresTestEntry):
                     'uid': self.user.identifier,
                     'token': self.token,
                     'json': '1' if json else '0'
-                }
+                },
                 data={
                     self.entry_content
                 }
@@ -292,8 +303,12 @@ class TestEntry(RequiresTestEntry):
 class TestListEntries(RequiresTestUser):
     """Tests for the list_entries endpoint."""
 
-    api_endpoint = build_url(self.config.PROTO, self.config.SERVER_URL, "list")
-    valid_methods: Tuple[str...] = ("GET")
+    valid_methods = ("GET")
+
+    @property
+    @strict
+    def api_endpoint(self) -> str:
+        return build_url(self.config.PROTO, self.config.SERVER_URL, "list")
 
     @property
     @strict

@@ -55,7 +55,7 @@ class RequiresTestUser:
         def check_method(method: str):
             """Check an unauthorized user for a particular method."""
             invalid_token_response = request(
-                method=method
+                method=method,
                 url=self.api_endpoint,
                 headers={
                     "uid":          self.user.identifier,
@@ -64,7 +64,7 @@ class RequiresTestUser:
                 }
             )
             assert not invalid_token_response.ok
-            assert invalid_token_response.status_code = 401
+            assert invalid_token_response.status_code == 401
             assert invalid_token_response.text == "Unauthorized"
             with raises(HTTPError):
                 invalid_token_response.raise_for_status()
@@ -79,7 +79,7 @@ class RequiresTestEntry(RequiresTestUser):
     Subclassing this adds the "entry" object to your class, and a corresponding
     entry in the database.
     """
-    valid_methods: Tuple[str...] = (,)
+    valid_methods = []
 
     def setup_method(self):
         """Create a ListEntry object to work with and commit it.
@@ -105,7 +105,7 @@ class TestUserIsUnauthorized(RequiresTestUser):
     """Tests for the "user_is_unauthorized" function."""
     user_name = "TestUserIsUnauthorized User"
     token: bytes
-    valid_methods: Tuple[str...] = (,)
+    valid_methods = []
 
     def test_invalid_token(self):
         """Check for a True response after giving an invalid token."""

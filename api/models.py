@@ -3,13 +3,15 @@
 Each class defines a table in the relational database.
 """
 from api.db import Model, Column, Integer, String, ForeignKey
+from config import Config
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
 from misc_functions import get_entropy
 from json import dumps
-from typing import Callable\
+from typing import Callable
 from strict_hint import strict
+
 
 class User(UserMixin, Model):
     """Define a user who can use the API."""
@@ -20,6 +22,7 @@ class User(UserMixin, Model):
     @strict
     def __init__(self, readable_name: str):
         """A new User, specifying a name."""
+        self.config = Config()
         self.readable_name = readable_name
 
     @strict
@@ -39,14 +42,14 @@ class User(UserMixin, Model):
             user.new_token(cbfunc, user, db)
         where user the object representing this class, and db is the database.
         """
-        token = get_entropy(Config.ENTROPY_BITS)
+        token = get_entropy(self.config.ENTROPY_BITS)
         self.token_hash = generate_password_hash(token)
         return callback(token, *cbargs, **cbkwargs)
 
     @strict
     def check_token(self, token: str) -> bool:
         """Check if the given token matches the stored hash."""
-        return True if check_token_hash(
+        return True if check_password_hash(
             self.token_hash, token
         ) else False
 

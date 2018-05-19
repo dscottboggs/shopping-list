@@ -2,7 +2,8 @@ from flask import request as incoming_request, make_response
 from json import dumps as toJSONtext, loads as fromJSONtext
 from strict_hint import strict
 from sqlalchemy.exc import SQLAlchemyError
-from inteface_api import app
+from api import app
+from api.models import ListEntry
 from config import Config
 
 
@@ -86,7 +87,8 @@ def entry():
         )
         if len(content) > 256:
             return (
-                f"Content is too long! Received {len(content)} chars, max 256.",
+                "Content is too long! Received %s chars, max 256."
+                    % len(content),
                 400
             )
         the_entry = ListEntry(
@@ -119,9 +121,9 @@ def list_entries():
             ):
         return ("Unauthorized", 401)
     response = make_response(
-        toJSONtext[
+        toJSONtext([
             fromJSONtext(entry.json) for entry in ListEntry.query.all()
-        ],
+        ]),
         200
     )
     response.headers['Content-Type'] = 'application/json'

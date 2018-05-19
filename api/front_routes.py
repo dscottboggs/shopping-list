@@ -1,3 +1,4 @@
+"""
 @app.route("/")
 def display_list():
     if user_is_unauthorized(
@@ -10,3 +11,4 @@ def display_list():
         title="List",
         listvals=[loads(entry.json) for entry in ListEntry.query.all]
     )
+"""

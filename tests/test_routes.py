@@ -1,11 +1,16 @@
 """Tests for the routes.py file in the interface_api module."""
 from interface_api.routes import user_is_unauthorized
-from interface_api.models import User
+from interface_api.models import User, ListEntry
 from config import Config
 from misc_functions import build_url
 from interface_api import db
 from requests import get, post, delete, request, HTTPError
 from strict_hint import strict
+from pytest import raises
+from json import loads
+from textwrap import dedent
+from typing import Dict, List, Union
+from SQLAlchemy import SQLAlchemyError
 
 
 class RequiresTestUser:
@@ -29,6 +34,7 @@ class RequiresTestUser:
 
     def setup_method(self):
         """Create a User to check for, commit it, and store its token."""
+        self.config = Config()
         self.user = User(str(self.user_name))
 
         @strict
@@ -55,7 +61,7 @@ class RequiresTestUser:
         def check_method(method: str):
             """Check an unauthorized user for a particular method."""
             invalid_token_response = request(
-                method=method
+                method=method,
                 url=self.api_endpoint,
                 headers={
                     "uid":          self.user.identifier,
@@ -64,7 +70,7 @@ class RequiresTestUser:
                 }
             )
             assert not invalid_token_response.ok
-            assert invalid_token_response.status_code = 401
+            assert invalid_token_response.status_code == 401
             assert invalid_token_response.text == "Unauthorized"
             with raises(HTTPError):
                 invalid_token_response.raise_for_status()
@@ -73,13 +79,13 @@ class RequiresTestUser:
             check_method(meth)
 
 
-
 class RequiresTestEntry(RequiresTestUser):
     """A superclass for tests that require a ListEntry object to work with.
 
     Subclassing this adds the "entry" object to your class, and a corresponding
     entry in the database.
     """
+    valid_methods = []
 
     def setup_method(self):
         """Create a ListEntry object to work with and commit it.
@@ -100,10 +106,12 @@ class RequiresTestEntry(RequiresTestUser):
         db.session.commit()
         super().teardown_method()
 
+
 class TestUserIsUnauthorized(RequiresTestUser):
     """Tests for the "user_is_unauthorized" function."""
     user_name = "TestUserIsUnauthorized User"
     token: bytes
+    valid_methods = []
 
     def test_invalid_token(self):
         """Check for a True response after giving an invalid token."""
@@ -123,9 +131,15 @@ class TestEntry(RequiresTestEntry):
 
     user_name = "TestEntry User"
     token: bytes
-    api_endpoint = build_url(
-        self.config.PROTO, self.config.SERVER_URL, "entry")
+
     entry_content = b"Simulated real content!"
+    valid_methods = ("GET", "POST", "DELETE")
+
+    @property
+    @strict
+    def api_endpoint(self) -> str:
+        return build_url(
+            self.config.PROTO, self.config.SERVER_URL, "entry")
 
     def test_valid_GET(self):
         """Test for a valid GET request for a valid DB row."""
@@ -155,7 +169,7 @@ class TestEntry(RequiresTestEntry):
         assert response.ok
         assert response.text == self.test_content
 
-    def test_invalid_GET(arg):
+    def test_invalid_GET(self):
         """Test that an invalid GET request is handled properly."""
         response = get(
             self.api_endpoint,
@@ -192,7 +206,7 @@ class TestEntry(RequiresTestEntry):
                 'uid': self.user.identifier,
                 'token': self.token,
                 'json': 0
-            }
+            },
             data=self.entry_content
         )
         assert response.ok
@@ -219,7 +233,7 @@ class TestEntry(RequiresTestEntry):
                     'uid': self.user.identifier,
                     'token': self.token,
                     'json': '1' if json else '0'
-                }
+                },
                 data={
                     self.entry_content
                 }
@@ -289,7 +303,12 @@ class TestEntry(RequiresTestEntry):
 class TestListEntries(RequiresTestUser):
     """Tests for the list_entries endpoint."""
 
-    api_endpoint = build_url(self.config.PROTO, self.config.SERVER_URL, "list")
+    valid_methods = ("GET")
+
+    @property
+    @strict
+    def api_endpoint(self) -> str:
+        return build_url(self.config.PROTO, self.config.SERVER_URL, "list")
 
     @property
     @strict

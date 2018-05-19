@@ -14,6 +14,7 @@ from os import sep as root
 from shutil import copytree, copy
 from hashlib import sha256
 from strict_hint import strict
+import random
 
 
 @strict
@@ -162,7 +163,11 @@ def baseN(
           b: int,
           numerals: str="0123456789abcdefghijklmnopqrstuvwxyz"
         ) -> str:
-    """Convert a number to any base up to 36"""
+    """Convert a number to any base using the defined numerals.
+
+    By default uses the set of alphanumeric US-ASCII characters, although it
+    could be a different set of numerals for a different conversion.
+    """
     return ((num == 0) and numerals[0]) or (baseN(
         num // b, b, numerals).lstrip(numerals[0]) + numerals[num % b])
 
@@ -185,9 +190,10 @@ def num_to_alpha(number: int, random_value: bool=False) -> str:
     a-z) number, which is really only useful to create random alphanumeric
     values for passwords based on a random number.
 
-    If 'random_value' is True, num isn't the literal number to be converted, it's how
-    many bits of entropy to gather for a random value."""
-    return baseN(num, 36)
+    If 'random_value' is True, num isn't the literal number to be converted,
+    it's how many bits of entropy to gather for a random value.
+    """
+    return baseN(number, 36)
 
 
 @strict

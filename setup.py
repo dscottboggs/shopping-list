@@ -25,7 +25,7 @@ setup(
     description="A ReSTful list API.",
     license="GPL-v3.0",
     keywords="shopping list api rest http flask",
-    packages=["interface-api", "tests"],
+    packages=["api", "tests"],
     tests_require=["pytest"],
     install_requires=[
         "Flask",

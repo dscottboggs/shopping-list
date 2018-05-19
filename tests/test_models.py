@@ -1,5 +1,5 @@
-from interface_api import db
-from interface_api.models import User, ListEntry
+from api import db
+from api.models import User, ListEntry
 from datetime import datetime
 
 

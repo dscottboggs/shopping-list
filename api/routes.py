@@ -9,7 +9,7 @@ from config import Config
 @strict
 def user_is_unauthorized(id: int, token: bytes) -> bool:
     """Check if the given user is authorized, and return False if so."""
-    from interface_api.models import User
+    from api.models import User
     try:
         user = User.query.get(id)
     except SQLAlchemyError:
@@ -61,8 +61,8 @@ def entry():
                 incoming_request.headers.get('token')
             ):
         return ("Unauthorized", 401)
-    from interface_api import db
-    from interface_api.models import ListEntry
+    from api import db
+    from api.models import ListEntry
     if incoming_request.method == "GET":
         try:
             if incoming_request.headers.get("json") == "0":

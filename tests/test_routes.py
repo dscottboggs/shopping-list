@@ -1,9 +1,9 @@
-"""Tests for the routes.py file in the interface_api module."""
-from interface_api.routes import user_is_unauthorized
-from interface_api.models import User, ListEntry
+"""Tests for the routes.py file in the api module."""
+from api.routes import user_is_unauthorized
+from api.models import User, ListEntry
 from config import Config
 from misc_functions import build_url
-from interface_api import db
+from api import db
 from requests import get, post, delete, request, HTTPError
 from strict_hint import strict
 from pytest import raises
@@ -25,7 +25,7 @@ class RequiresTestUser:
     package.
 
     Subclassing this allows the subclassed object access to the 'user' and
-    'token' attributes, which represent an interface_api.models.User and a
+    'token' attributes, which represent an api.models.User and a
     bytestring representing the alphanumeric representation of said user's
     raw token.
     """

@@ -2,7 +2,7 @@
 
 Each class defines a table in the relational database.
 """
-from interface_api.db import Model, Column, Integer, String, ForeignKey
+from api.db import Model, Column, Integer, String, ForeignKey
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime

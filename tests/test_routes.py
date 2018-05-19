@@ -73,13 +73,13 @@ class RequiresTestUser:
             check_method(meth)
 
 
-
 class RequiresTestEntry(RequiresTestUser):
     """A superclass for tests that require a ListEntry object to work with.
 
     Subclassing this adds the "entry" object to your class, and a corresponding
     entry in the database.
     """
+    valid_methods: Tuple[str...] = (,)
 
     def setup_method(self):
         """Create a ListEntry object to work with and commit it.
@@ -100,10 +100,12 @@ class RequiresTestEntry(RequiresTestUser):
         db.session.commit()
         super().teardown_method()
 
+
 class TestUserIsUnauthorized(RequiresTestUser):
     """Tests for the "user_is_unauthorized" function."""
     user_name = "TestUserIsUnauthorized User"
     token: bytes
+    valid_methods: Tuple[str...] = (,)
 
     def test_invalid_token(self):
         """Check for a True response after giving an invalid token."""
@@ -126,6 +128,7 @@ class TestEntry(RequiresTestEntry):
     api_endpoint = build_url(
         self.config.PROTO, self.config.SERVER_URL, "entry")
     entry_content = b"Simulated real content!"
+    valid_methods: Tuple[str...] = ("GET", "POST", "DELETE")
 
     def test_valid_GET(self):
         """Test for a valid GET request for a valid DB row."""
@@ -290,6 +293,7 @@ class TestListEntries(RequiresTestUser):
     """Tests for the list_entries endpoint."""
 
     api_endpoint = build_url(self.config.PROTO, self.config.SERVER_URL, "list")
+    valid_methods: Tuple[str...] = ("GET")
 
     @property
     @strict

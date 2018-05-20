@@ -2,7 +2,7 @@
 
 Each class defines a table in the relational database.
 """
-from api.db import Model, Column, Integer, String, ForeignKey
+from api import db      # Model, Column, Integer, String, ForeignKey
 from config import Config
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -13,11 +13,11 @@ from typing import Callable
 from strict_hint import strict
 
 
-class User(UserMixin, Model):
+class User(UserMixin, db.Model):
     """Define a user who can use the API."""
-    identifier      = Column(Integer, primary_key=True)
-    token_hash      = Column(String(length=128))
-    readable_name   = Column(String(length=32))
+    identifier      = db.Column(db.Integer, primary_key=True)
+    token_hash      = db.Column(db.String(length=128))
+    readable_name   = db.Column(db.String(length=32))
 
     @strict
     def __init__(self, readable_name: str):
@@ -59,12 +59,12 @@ class User(UserMixin, Model):
         return self.identifier
 
 
-class ListEntry(Model):
+class ListEntry(db.Model):
     """An individual item in a list, and its associated attributes."""
-    identifier      = Column(Integer, primary_key=True)
-    content         = Column(String, length=256)
-    author          = Column(Integer, ForeignKey("user.identifier"))
-    creation_time   = Column(Integer)
+    identifier      = db.Column(db.Integer, primary_key=True)
+    content         = db.Column(String, length=256)
+    author          = db.Column(db.Integer, db.ForiegnKey("user.identifier"))
+    creation_time   = db.Column(db.Integer)
 
     @strict
     def __init__(self, content: str, author: int):

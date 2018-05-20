@@ -62,7 +62,7 @@ class User(UserMixin, db.Model):
 class ListEntry(db.Model):
     """An individual item in a list, and its associated attributes."""
     identifier      = db.Column(db.Integer, primary_key=True)
-    content         = db.Column(String, length=256)
+    content         = db.Column(db.String, length=256)
     author          = db.Column(db.Integer, db.ForiegnKey("user.identifier"))
     creation_time   = db.Column(db.Integer)
 

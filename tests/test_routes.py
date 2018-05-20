@@ -10,7 +10,7 @@ from pytest import raises
 from json import loads
 from textwrap import dedent
 from typing import Dict, List, Union
-from SQLAlchemy import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class RequiresTestUser:

@@ -30,6 +30,8 @@ setup(
     install_requires=[
         "Flask",
         "flask-sqlalchemy",
+	"flask-migrate",
+	"flask-login"
     ],
     setup_requires=['pytest-runner']
 )

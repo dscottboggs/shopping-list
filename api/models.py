@@ -9,7 +9,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
 from misc_functions import get_entropy
 from json import dumps
-from typing import Callable
+from typing import Callable, Optional, Any
 from strict_hint import strict
 
 
@@ -25,8 +25,13 @@ class User(UserMixin, db.Model):
         self.config = Config()
         self.readable_name = readable_name
 
-    @strict
-    def new_token(self, callback: Callable=print, *cbargs, **cbkwargs):
+    #@strict  # or not...
+    def new_token(
+                self,
+                callback: Optional[Callable[[bytes], None]]=None,
+                *cbargs,
+                **cbkwargs
+            ):
         """Generate a new token for the user.
 
         Callback is a function to accept and handle the raw token. It defaults
@@ -42,6 +47,8 @@ class User(UserMixin, db.Model):
             user.new_token(cbfunc, user, db)
         where user the object representing this class, and db is the database.
         """
+        if callback is None:
+            callback = print
         token = get_entropy(self.config.ENTROPY_BITS)
         self.token_hash = generate_password_hash(token)
         return callback(token, *cbargs, **cbkwargs)

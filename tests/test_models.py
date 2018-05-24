@@ -37,9 +37,9 @@ class TestListEntry:
     content = "Test content value."
 
     def setup_method(self):
-        now = datetime.now()
+        self.setup_time = datetime.now()
         self.user = User(self.name)
-        self.entry = ListEntry(self.content, self.user)
+        self.entry = ListEntry(self.content, self.user.identifier)
         db.session.add(self.entry, self.user)
         db.session.commit()
 
@@ -49,8 +49,11 @@ class TestListEntry:
         ListEntry.query.get(self.entry.identifier).delete()
 
     def test_creation_time(self):
-        """Test that the creation time is close to now."""
-        assert int(now.timestamp()) \
+        """Test that the creation time is close to now.
+
+        Might need revised to allow more time.
+        """
+        assert int(self.setup_time.timestamp()) \
             == int(ListEntry.query.get(self.entry.identifier).creation_time)
 
     def test_content(self):

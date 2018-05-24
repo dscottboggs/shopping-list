@@ -9,8 +9,12 @@ from strict_hint import strict
 from pytest import raises
 from json import loads
 from textwrap import dedent
-from typing import Dict, List, Union
 from sqlalchemy.exc import SQLAlchemyError
+#types
+from typing import Dict, List, Union
+from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy.model import DefaultMeta as dbModel
+type(User)
 
 
 class RequiresTestUser:
@@ -38,7 +42,12 @@ class RequiresTestUser:
         self.user = User(str(self.user_name))
 
         @strict
-        def cb(user_token: bytes, user, db, testobj):
+        def cb(
+                    user_token: bytes,
+                    user: dbModel,
+                    db:SQLAlchemy,
+                    testobj: type
+                ) -> None:
             """The callback funtion to be used by new_token.
 
             Handles committing the User to the database."""
@@ -304,6 +313,7 @@ class TestListEntries(RequiresTestUser):
     """Tests for the list_entries endpoint."""
 
     valid_methods = ("GET")
+    user_name = "TestListEntries User"
 
     @property
     @strict

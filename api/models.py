@@ -3,7 +3,7 @@
 Each class defines a table in the relational database.
 """
 from api import db      # Model, Column, Integer, String, ForeignKey
-from config import Config
+from config import Loggable
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
@@ -13,7 +13,7 @@ from typing import Callable, Optional, Any
 from strict_hint import strict
 
 
-class User(UserMixin, db.Model):
+class User(UserMixin, db.Model, Loggable):
     """Define a user who can use the API."""
     identifier      = db.Column(db.Integer, primary_key=True)
     token_hash      = db.Column(db.String(length=128))
@@ -22,8 +22,8 @@ class User(UserMixin, db.Model):
     @strict
     def __init__(self, readable_name: str):
         """A new User, specifying a name."""
-        self.config = Config()
         self.readable_name = readable_name
+        super().__init__()
 
     #@strict  # or not...
     def new_token(
@@ -65,6 +65,27 @@ class User(UserMixin, db.Model):
         """Required by flask_login."""
         return self.identifier
 
+    def delete(self, instance: Union[int, User, None]):
+        """Delete a User by its ID or the User object itself."""
+        if isinstance(instance, int):
+            # query by ID value
+            self.query.get(instance).delete()
+        elif isinstance(instance, User):
+            # query by User's 'identifier' attribute
+            if instance.identifier is None:
+                self.log.warn(dedent(f"""
+                    User {instance} hasn't been committed yet, no need to
+                    delete."""))
+                return
+            self.query.get(instance.identifier).delete()
+        elif instance is None:
+            # call again with this object's identifier.
+            self.delete(self.identifier)
+        else:
+            raise TypeError(dedent(f"""
+                Instance {instance} should be int or User if specified,
+                got {type(instance)}."""))
+
 
 class ListEntry(db.Model):
     """An individual item in a list, and its associated attributes."""
@@ -100,3 +121,24 @@ class ListEntry(db.Model):
             'author':           self.author,
             'creation_time':    self.creation_time
         })
+
+    def delete(self, instance: Union[int, ListEntry, None]):
+        """Delete a ListEntry by its ID or the ListEntry object itself."""
+        if isinstance(instance, int):
+            # query by ID value
+            self.query.get(instance).delete()
+        elif isinstance(instance, ListEntry):
+            # query by User's 'identifier' attribute
+            if instance.identifier is None:
+                self.log.warn(dedent(f"""
+                    User {instance.__repr__()} hasn't been committed yet, no
+                    need to delete."""))
+                return
+            self.query.get(instance.identifier).delete()
+        elif instance is None:
+            # call again with this object's identifier.
+            self.delete(self.identifier)
+        else:
+            raise TypeError(dedent(f"""
+                Instance {instance.__repr__()} should be int or ListEntry if
+                specified, got {type(instance)}."""))

@@ -1,6 +1,15 @@
 from api import db
 from api.models import User, ListEntry
 from datetime import datetime
+from strict_hint import strict
+from typing import Union
+
+
+@strict
+def add_to_db(model_instance: Union[TestUser, TestListEntry]):
+    """Add the given element to the app's database."""
+    db.session.add(model_instance)
+    db.session.commit
 
 
 class TestUser:
@@ -9,8 +18,7 @@ class TestUser:
     def setup_method(self):
         """Get a User object to work with."""
         self.user = User(self.name)
-        db.session.add(self.user)
-        db.session.commit()
+        add_to_db(self.user)
 
     def teardown_method(self):
         """Remove the earlier created User."""
@@ -39,14 +47,14 @@ class TestListEntry:
     def setup_method(self):
         self.setup_time = datetime.now()
         self.user = User(self.name)
+        add_to_db(self.user)
         self.entry = ListEntry(self.content, self.user.identifier)
-        db.session.add(self.entry, self.user)
-        db.session.commit()
+        add_to_db(self.entry)
 
     def teardown_method(self):
         """Delete the earlier created database entries."""
-        User.query.get(self.user.identifier).delete()
-        ListEntry.query.get(self.entry.identifier).delete()
+        self.entry.delete()
+        self.user.delete()
 
     def test_creation_time(self):
         """Test that the creation time is close to now.

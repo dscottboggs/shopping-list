@@ -10,7 +10,7 @@ from pytest import raises
 from json import loads
 from textwrap import dedent
 from sqlalchemy.exc import SQLAlchemyError
-#types
+# types
 from typing import Dict, List, Union
 from flask_sqlalchemy import SQLAlchemy
 type(User)
@@ -44,7 +44,7 @@ class RequiresTestUser:
         def cb(
                     user_token: bytes,
                     user: User,
-                    db:SQLAlchemy,
+                    db: SQLAlchemy,
                     testobj: type
                 ) -> None:
             """The callback funtion to be used by new_token.

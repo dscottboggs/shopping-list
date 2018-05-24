@@ -13,7 +13,6 @@ from sqlalchemy.exc import SQLAlchemyError
 #types
 from typing import Dict, List, Union
 from flask_sqlalchemy import SQLAlchemy
-from flask_sqlalchemy.model import DefaultMeta as dbModel
 type(User)
 
 
@@ -44,7 +43,7 @@ class RequiresTestUser:
         @strict
         def cb(
                     user_token: bytes,
-                    user: dbModel,
+                    user: User,
                     db:SQLAlchemy,
                     testobj: type
                 ) -> None:

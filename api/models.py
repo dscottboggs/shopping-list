@@ -3,7 +3,7 @@
 Each class defines a table in the relational database.
 """
 from api import db      # Model, Column, Integer, String, ForeignKey
-from config import Loggable
+from config import Config
 from flask_login import UserMixin
 from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
@@ -13,7 +13,7 @@ from typing import Callable, Optional, Any
 from strict_hint import strict
 
 
-class User(UserMixin, db.Model, Loggable):
+class User(UserMixin, db.Model):
     """Define a user who can use the API."""
     identifier      = db.Column(db.Integer, primary_key=True)
     token_hash      = db.Column(db.String(length=128))
@@ -23,7 +23,7 @@ class User(UserMixin, db.Model, Loggable):
     def __init__(self, readable_name: str):
         """A new User, specifying a name."""
         self.readable_name = readable_name
-        super().__init__()
+        self.config = Config()
 
     #@strict  # or not...
     def new_token(
@@ -73,9 +73,10 @@ class User(UserMixin, db.Model, Loggable):
         elif isinstance(instance, User):
             # query by User's 'identifier' attribute
             if instance.identifier is None:
-                self.log.warn(dedent(f"""
-                    User {instance} hasn't been committed yet, no need to
-                    delete."""))
+                print(
+                    f"User {instance} hasn't been committed yet, no need to "
+                    "delete."
+                )
                 return
             self.query.get(instance.identifier).delete()
         elif instance is None:
@@ -130,9 +131,10 @@ class ListEntry(db.Model):
         elif isinstance(instance, ListEntry):
             # query by User's 'identifier' attribute
             if instance.identifier is None:
-                self.log.warn(dedent(f"""
-                    User {instance.__repr__()} hasn't been committed yet, no
-                    need to delete."""))
+                print(
+                    f"User {instance} hasn't been committed yet, no need to "
+                    "delete."
+                )
                 return
             self.query.get(instance.identifier).delete()
         elif instance is None:

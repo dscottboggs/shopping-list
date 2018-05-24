@@ -9,7 +9,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from datetime import datetime
 from misc_functions import get_entropy
 from json import dumps
-from typing import Callable, Optional, Any
+from typing import Callable, Optional, Any, Union
 from strict_hint import strict
 
 
@@ -65,12 +65,17 @@ class User(UserMixin, db.Model):
         """Required by flask_login."""
         return self.identifier
 
-    def delete(self, instance: Union[int, User, None]):
-        """Delete a User by its ID or the User object itself."""
+    def delete(self, instance=None):
+        """Delete a User by its ID or the User object itself.
+
+        Instance can be an integer representing a User row primary key, a User
+        object, or be unspecified. If it's unspecified, this method will
+        attempt to delete the object it is a member of from the database.
+        """
         if isinstance(instance, int):
             # query by ID value
             self.query.get(instance).delete()
-        elif isinstance(instance, User):
+        elif isinstance(instance, type(self))):
             # query by User's 'identifier' attribute
             if instance.identifier is None:
                 print(
@@ -123,12 +128,17 @@ class ListEntry(db.Model):
             'creation_time':    self.creation_time
         })
 
-    def delete(self, instance: Union[int, ListEntry, None]):
-        """Delete a ListEntry by its ID or the ListEntry object itself."""
+    def delete(self, instance=None):
+        """Delete a ListEntry by its ID or the ListEntry object itself.
+
+        Instance can be an integer representing a User row primary key, a
+        ListEntry object, or be unspecified. If it's unspecified, this method
+        will attempt to delete the object it is a member of from the database.
+        """
         if isinstance(instance, int):
             # query by ID value
             self.query.get(instance).delete()
-        elif isinstance(instance, ListEntry):
+        elif isinstance(instance, type(self)):
             # query by User's 'identifier' attribute
             if instance.identifier is None:
                 print(

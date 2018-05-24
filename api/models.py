@@ -28,7 +28,7 @@ class User(UserMixin, db.Model):
     #@strict  # or not...
     def new_token(
                 self,
-                callback: Optional[Callable[[bytes], None]]=None,
+                callback: Optional[Callable[[bytes], Any]]=None,
                 *cbargs,
                 **cbkwargs
             ):
@@ -54,7 +54,7 @@ class User(UserMixin, db.Model):
         return callback(token, *cbargs, **cbkwargs)
 
     @strict
-    def check_token(self, token: str) -> bool:
+    def check_token(self, token: bytes) -> bool:
         """Check if the given token matches the stored hash."""
         return True if check_password_hash(
             self.token_hash, token

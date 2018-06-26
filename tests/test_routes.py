@@ -45,7 +45,7 @@ class RequiresTestUser:
                     user_token: bytes,
                     user: User,
                     db: SQLAlchemy,
-                    testobj: type
+                    testobj
                 ) -> None:
             """The callback funtion to be used by new_token.
 

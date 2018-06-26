@@ -5,8 +5,7 @@ from strict_hint import strict
 from typing import Union
 
 
-@strict
-def add_to_db(model_instance: Union[TestUser, TestListEntry]):
+def add_to_db(model_instance):
     """Add the given element to the app's database."""
     db.session.add(model_instance)
     db.session.commit

@@ -75,7 +75,7 @@ class User(UserMixin, db.Model):
         if isinstance(instance, int):
             # query by ID value
             self.query.get(instance).delete()
-        elif isinstance(instance, type(self))):
+        elif isinstance(instance, type(self)):
             # query by User's 'identifier' attribute
             if instance.identifier is None:
                 print(
